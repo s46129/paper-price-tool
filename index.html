@@ -145,8 +145,10 @@
   .fav-toggle{ display:flex; align-items:center; gap:6px; font-size:0.85rem; color:var(--text); cursor:pointer; user-select:none; white-space:nowrap; }
   .fav-toggle input{ width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
   .page-footer{ margin-top:4px; padding:0 4px; }
-  .page-footer p{ margin:0; font-size:0.78rem; color:var(--muted); line-height:1.6; }
+  .page-footer p{ margin:0 0 6px; font-size:0.78rem; color:var(--muted); line-height:1.6; }
+  .page-footer p:last-child{ margin-bottom:0; }
   .page-footer a{ color:var(--accent); }
+  .page-footer .disclaimer{ color:var(--text); font-weight:600; }
   @media (max-width:640px){
     table{ min-width:560px; }
     .card{ padding:16px; }
@@ -264,10 +266,12 @@
   </section>
 
   <footer class="page-footer">
-    <p>Data 來源：紙張種類與每才單價整理自 <a href="https://www.avocado.art/" target="_blank" rel="noopener"><strong>Avocado Art Lab</strong></a> 的輸出價格試算表 —
+    <p class="disclaimer">⚠ 本頁為使用者自製的非官方工具，並非 Avocado Art Lab 官方網站或產品。</p>
+    <p>Data 來源：紙張種類與每才單價整理自 <a href="https://www.avocado.art/" target="_blank" rel="noopener"><strong>Avocado Art Lab</strong></a> 公開分享的輸出價格試算表 —
       <a href="https://www.avocado.art/%E7%B4%99%E6%9D%90%E4%BB%8B%E7%B4%B9" target="_blank" rel="noopener">紙材介紹</a> ·
       <a href="https://www.avocado.art/%E8%BC%B8%E5%87%BA%E6%96%B9%E6%A1%88" target="_blank" rel="noopener">輸出方案及須知</a>。
-      頁面上的名稱與價格皆可自行編輯，實際價格仍以 <a href="https://www.avocado.art/" target="_blank" rel="noopener">Avocado Art Lab</a> 公告或報價為準。</p>
+      頁面上的名稱與價格皆可自行編輯，僅供比較估算參考。</p>
+    <p>才數單價擷取於 2026-07-16，正確售價請以 <a href="https://www.avocado.art/" target="_blank" rel="noopener">Avocado Art Lab</a> 官方公告或報價為準。</p>
   </footer>
 </div>
 
