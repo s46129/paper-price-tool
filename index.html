@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>紙張輸出估價工具</title>
+<style>
+  :root{
+    --bg:#f5f6f8;
+    --card:#ffffff;
+    --text:#1c1e21;
+    --muted:#6b7280;
+    --border:#e3e5e8;
+    --accent:#2563eb;
+    --accent-hover:#1d4ed8;
+    --danger:#dc2626;
+    --danger-bg:#fee2e2;
+    --best:#ecfdf5;
+    --best-border:#10b981;
+    --input-bg:#ffffff;
+    --header-bg:#f0f2f5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#16181c;
+      --card:#1f2226;
+      --text:#e8eaed;
+      --muted:#9aa0a6;
+      --border:#33363b;
+      --accent:#3b82f6;
+      --accent-hover:#60a5fa;
+      --danger:#f87171;
+      --danger-bg:#3a1f22;
+      --best:#0f2b22;
+      --best-border:#10b981;
+      --input-bg:#26292e;
+      --header-bg:#26292e;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#16181c; --card:#1f2226; --text:#e8eaed; --muted:#9aa0a6; --border:#33363b;
+    --accent:#3b82f6; --accent-hover:#60a5fa; --danger:#f87171; --danger-bg:#3a1f22;
+    --best:#0f2b22; --best-border:#10b981; --input-bg:#26292e; --header-bg:#26292e;
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f6f8; --card:#ffffff; --text:#1c1e21; --muted:#6b7280; --border:#e3e5e8;
+    --accent:#2563eb; --accent-hover:#1d4ed8; --danger:#dc2626; --danger-bg:#fee2e2;
+    --best:#ecfdf5; --best-border:#10b981; --input-bg:#ffffff; --header-bg:#f0f2f5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:24px 16px 64px;
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Segoe UI",Roboto,"Microsoft JhengHei",sans-serif;
+    line-height:1.5;
+  }
+  .wrap{ max-width:980px; margin:0 auto; }
+  header.page{ margin-bottom:20px; }
+  header.page h1{ font-size:1.5rem; margin:0 0 4px; }
+  header.page p{ margin:0; color:var(--muted); font-size:0.9rem; }
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:20px; margin-bottom:20px; box-shadow:0 1px 2px rgba(0,0,0,0.04);
+  }
+  .card h2{ font-size:1.05rem; margin:0 0 14px; display:flex; align-items:center; gap:8px;}
+  .card h2 .step{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:50%; background:var(--accent); color:#fff;
+    font-size:0.75rem; flex-shrink:0;
+  }
+  .grid-inputs{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:12px; margin-bottom:12px;
+  }
+  label{ display:block; font-size:0.8rem; color:var(--muted); margin-bottom:4px; }
+  input[type=number], input[type=text]{
+    width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px;
+    background:var(--input-bg); color:var(--text); font-size:0.95rem;
+  }
+  input[type=number]:focus, input[type=text]:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .cai-preview{
+    display:flex; flex-wrap:wrap; gap:20px; align-items:baseline;
+    background:var(--header-bg); border-radius:8px; padding:10px 14px; margin-top:4px;
+    font-size:0.88rem; color:var(--muted);
+  }
+  .cai-preview b{ color:var(--text); font-size:1rem; }
+  .note{ font-size:0.78rem; color:var(--muted); margin-top:8px; }
+  .table-scroll{ overflow-x:auto; max-height:420px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; }
+  table{ width:100%; border-collapse:collapse; font-size:0.86rem; min-width:640px; }
+  thead th{
+    position:sticky; top:0; background:var(--header-bg); text-align:left;
+    padding:8px 10px; border-bottom:1px solid var(--border); white-space:nowrap; z-index:1;
+  }
+  tbody td{ padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  tbody tr.category-row td{
+    background:var(--header-bg); font-weight:600; color:var(--muted); font-size:0.8rem;
+    padding:6px 10px;
+  }
+  tbody tr:hover td{ background:rgba(37,99,235,0.04); }
+  td.num{ text-align:right; white-space:nowrap; }
+  .cell-input{ min-width:70px; }
+  .cell-input.name{ min-width:170px; }
+  .cell-input.price{ width:80px; text-align:right; }
+  input.cell-input{ padding:6px 8px; font-size:0.85rem; }
+  .checkbox-cell{ text-align:center; width:36px; }
+  input[type=checkbox]{ width:17px; height:17px; cursor:pointer; accent-color:var(--accent); }
+  .row-actions{ text-align:center; width:36px; }
+  .icon-btn{
+    border:none; background:none; cursor:pointer; color:var(--muted); font-size:1rem;
+    padding:2px 6px; border-radius:6px;
+  }
+  .icon-btn:hover{ background:var(--danger-bg); color:var(--danger); }
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; border:none; border-radius:8px;
+    padding:10px 18px; font-size:0.9rem; cursor:pointer; font-weight:500;
+  }
+  .btn-primary{ background:var(--accent); color:#fff; }
+  .btn-primary:hover{ background:var(--accent-hover); }
+  .btn-secondary{ background:var(--header-bg); color:var(--text); border:1px solid var(--border); }
+  .btn-secondary:hover{ filter:brightness(0.96); }
+  .btn-ghost{ background:none; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover{ color:var(--danger); border-color:var(--danger); }
+  .toolbar{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; align-items:center; }
+  .toolbar .spacer{ flex:1; }
+  .cart-empty{ text-align:center; color:var(--muted); padding:32px 12px; font-size:0.9rem; }
+  tr.best td{ background:var(--best) !important; }
+  .best-badge{
+    display:inline-block; margin-left:6px; font-size:0.72rem; background:var(--best-border);
+    color:#fff; padding:1px 7px; border-radius:999px; white-space:nowrap;
+  }
+  .cart-qty{ width:56px; text-align:center; }
+  tfoot td{ padding:12px 10px; font-weight:700; border-top:2px solid var(--border); background:var(--header-bg); }
+  .grand-total{ font-size:1.15rem; color:var(--accent); }
+  .preset-block{ margin:14px 0; }
+  .preset-label{ font-size:0.78rem; color:var(--muted); margin:0 0 6px; }
+  .preset-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .preset-chips:empty{ display:none; }
+  .chip{ border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:999px; padding:6px 14px; font-size:0.82rem; cursor:pointer; }
+  .chip:hover{ border-color:var(--accent); color:var(--accent); }
+  .chip.custom{ display:inline-flex; align-items:center; gap:6px; padding-right:6px; }
+  .chip.custom .del{ border:none; background:none; cursor:pointer; color:var(--muted); font-size:0.9rem; line-height:1; padding:0 2px; }
+  .chip.custom .del:hover{ color:var(--danger); }
+  .star-btn{ border:none; background:none; cursor:pointer; font-size:1.15rem; line-height:1; color:#d1d5db; padding:2px 4px; }
+  .star-btn.active{ color:#f59e0b; }
+  .fav-toggle{ display:flex; align-items:center; gap:6px; font-size:0.85rem; color:var(--text); cursor:pointer; user-select:none; white-space:nowrap; }
+  .fav-toggle input{ width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+  @media (max-width:640px){
+    table{ min-width:560px; }
+    .card{ padding:16px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>紙張輸出估價工具</h1>
+    <p>輸入尺寸與數量、勾選要比較的紙張種類，加入購物車即可看到各項小計與總價。</p>
+  </header>
+
+  <!-- Step 1: dimensions -->
+  <section class="card">
+    <h2><span class="step">1</span>設定尺寸與數量</h2>
+    <div class="grid-inputs">
+      <div>
+        <label for="lengthInput">長 Length (cm)</label>
+        <input type="number" id="lengthInput" min="0" step="0.1" value="70">
+      </div>
+      <div>
+        <label for="widthInput">寬 Width (cm)</label>
+        <input type="number" id="widthInput" min="0" step="0.1" value="105">
+      </div>
+      <div>
+        <label for="borderInput">四周留白 Border（cm，單邊）</label>
+        <input type="number" id="borderInput" min="0" step="0.1" value="0">
+      </div>
+      <div>
+        <label for="qtyInput">數量 Quantity（張）</label>
+        <input type="number" id="qtyInput" min="1" step="1" value="1">
+      </div>
+    </div>
+
+    <div class="preset-block">
+      <div class="preset-label">標準尺寸 ISO</div>
+      <div class="preset-chips" id="isoPresetChips"></div>
+      <div class="preset-label">相片尺寸 4x6系列（R size）</div>
+      <div class="preset-chips" id="rPresetChips"></div>
+      <div class="preset-label">我的尺寸</div>
+      <div class="preset-chips" id="customPresetChips"></div>
+      <button class="btn btn-secondary" id="saveSizeBtn" type="button">＋ 儲存目前尺寸</button>
+    </div>
+
+    <div class="cai-preview">
+      <span>實際印製尺寸：<b id="previewDim">70 × 105 cm</b></span>
+      <span>換算才數：<b id="previewRaw">8.17</b> 才</span>
+      <span>計價才數：<b id="previewCai">8.5</b> 才</span>
+    </div>
+    <p class="note">計價規則：1才 = 900 平方公分；未滿 1 才以 1 才計價，超過 1 才後以每 0.5 才為單位無條件進位。</p>
+  </section>
+
+  <!-- Step 2: paper selection -->
+  <section class="card">
+    <h2><span class="step">2</span>勾選要比較的紙張種類</h2>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="checkbox-cell">選</th>
+            <th class="checkbox-cell">★</th>
+            <th>代號</th>
+            <th>品牌</th>
+            <th>名稱</th>
+            <th class="num">克重</th>
+            <th>特性</th>
+            <th class="num">每才單價</th>
+            <th class="row-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="paperTableBody"></tbody>
+      </table>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-secondary" id="addPaperBtn">＋ 新增紙張</button>
+      <button class="btn btn-ghost" id="resetPapersBtn">還原預設清單</button>
+      <button class="btn btn-ghost" id="clearCheckedBtn">清除所有勾選</button>
+      <label class="fav-toggle"><input type="checkbox" id="favOnlyToggle"> 只顯示我的最愛 ⭐</label>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="addToCartBtn">加入購物車 →</button>
+    </div>
+  </section>
+
+  <!-- Step 3: cart -->
+  <section class="card">
+    <h2><span class="step">3</span>購物車 / 比價清單</h2>
+    <div class="table-scroll" id="cartTableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>紙張</th>
+            <th>尺寸 (含留白)</th>
+            <th class="num">才數</th>
+            <th class="num">每才單價</th>
+            <th class="num">數量</th>
+            <th class="num">小計</th>
+            <th class="row-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="cartTableBody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5">總計</td>
+            <td class="num grand-total" id="grandTotal">NT$ 0</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div id="cartEmptyMsg" class="cart-empty">購物車目前是空的，請在上方勾選紙張後按「加入購物車」。</div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" id="clearCartBtn">清空購物車</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var PAPERS_KEY = "ppe_papers_v1";
+  var CART_KEY = "ppe_cart_v1";
+
+  var DEFAULT_PAPERS = [
+    {cat:"膠基亮面 RC - Glossy", code:"PSPP", brand:"EasiColor", name:"Premium Semigloss Photo Paper", gsm:265, spec:"RC膠基、半光面", price:180},
+    {cat:"膠基亮面 RC - Glossy", code:"IGPLP", brand:"ILFORD", name:"Luster Photo Paper", gsm:250, spec:"RC膠基、珍珠面", price:200},
+    {cat:"膠基亮面 RC - Glossy", code:"IGPGP", brand:"ILFORD", name:"Glossy Photo Paper", gsm:250, spec:"RC膠基、光面", price:200},
+    {cat:"膠基亮面 RC - Glossy", code:"GPSPP", brand:"ILFORD", name:"Smooth Pearl", gsm:310, spec:"RC膠基、珍珠面", price:220},
+    {cat:"膠基亮面 RC - Glossy", code:"GPSGP", brand:"ILFORD", name:"Smooth Gloss", gsm:310, spec:"RC膠基、光面", price:220},
+    {cat:"膠基亮面 RC - Glossy", code:"PMPP", brand:"EasiColor", name:"Premium Metallic Photo Paper", gsm:255, spec:"RC膠基、金屬塗層", price:220},
+
+    {cat:"紙基亮面 Fiber Based - Glossy", code:"GFS", brand:"ILFORD", name:"Gold Fibre Silk", gsm:310, spec:"樹木纖維無酸、半光面", price:300},
+    {cat:"紙基亮面 Fiber Based - Glossy", code:"GFG", brand:"ILFORD", name:"Gold Fibre Gloss", gsm:310, spec:"純棉無酸、無OBA、光面", price:350},
+    {cat:"紙基亮面 Fiber Based - Glossy", code:"PFR", brand:"Canson", name:"Platine Fibre Rag", gsm:310, spec:"純棉無酸、無OBA、光面（支援60吋）", price:380},
+    {cat:"紙基亮面 Fiber Based - Glossy", code:"PRM", brand:"Hahnemühle", name:"Photo Rag Metallic", gsm:340, spec:"純棉無酸、無OBA、金屬塗層", price:380},
+    {cat:"紙基亮面 Fiber Based - Glossy", code:"PRB", brand:"Hahnemühle", name:"Photo Rag Baryta", gsm:315, spec:"純棉無酸、無OBA、光面（支援60吋）", price:380},
+    {cat:"紙基亮面 Fiber Based - Glossy", code:"PRS", brand:"Hahnemühle", name:"Photo Rag Satin", gsm:310, spec:"純棉無酸、無OBA、些許紋路微反光", price:380},
+
+    {cat:"紙基平光 Fiber Based - Matt", code:"FAS", brand:"ILFORD", name:"FineArt Smooth", gsm:200, spec:"紙基無酸、無OBA、些許紋路", price:250},
+    {cat:"紙基平光 Fiber Based - Matt", code:"FRS", brand:"EasiColor", name:"Fine Rag Smooth", gsm:310, spec:"純棉無酸、無OBA、平滑表面", price:280},
+    {cat:"紙基平光 Fiber Based - Matt", code:"TC", brand:"ILFORD", name:"Textured Cotton Rag", gsm:310, spec:"純棉無酸、無OBA、些許紋路", price:350},
+    {cat:"紙基平光 Fiber Based - Matt", code:"CAT", brand:"ILFORD", name:"Cotton Artist Textured", gsm:310, spec:"純棉無酸、無OBA、粗糙紋路", price:350},
+    {cat:"紙基平光 Fiber Based - Matt", code:"USFAP", brand:"EPSON", name:"Ultra Smooth Fine Art Paper", gsm:250, spec:"純棉無酸、無OBA、平滑表面（支援60吋）", price:380},
+    {cat:"紙基平光 Fiber Based - Matt", code:"Rag", brand:"Canson", name:"Rag Photographique II", gsm:310, spec:"純棉無酸、無OBA、平滑表面（支援60吋）", price:380},
+    {cat:"紙基平光 Fiber Based - Matt", code:"AQUA", brand:"Canson", name:"Aquarelle Rag", gsm:310, spec:"純棉無酸、無OBA、粗糙紋路", price:380},
+
+    {cat:"特殊媒材 Special Media", code:"WT", brand:"ILFORD", name:"Washi Torinoko", gsm:110, spec:"日本傳統平光和紙、無OBA、仿手工紋路", price:270},
+    {cat:"特殊媒材 Special Media", code:"MPC", brand:"Canson", name:"Museum Pro Canvas Lustre", gsm:385, spec:"亮面純棉無酸畫布、無OBA", price:320},
+    {cat:"特殊媒材 Special Media", code:"LYC", brand:"Breathing Color", name:"Lyve Canvas", gsm:400, spec:"霧面無酸油畫布、無OBA（支援60吋）", price:320}
+  ];
+
+  function cloneDefaults(){
+    return DEFAULT_PAPERS.map(function(p, i){
+      var copy = {}; for (var k in p) copy[k] = p[k];
+      copy.id = "p" + i + "_" + Date.now();
+      copy.checked = false;
+      copy.favorite = false;
+      return copy;
+    });
+  }
+
+  var SIZE_PRESETS = {
+    "isoPresetChips": [
+      {name:"A3", length:42.0, width:29.7},
+      {name:"A4", length:29.7, width:21.0},
+      {name:"A5", length:21.0, width:14.8}
+    ],
+    "rPresetChips": [
+      {name:"3R (3.5x5)", length:12.7, width:8.9},
+      {name:"4R (4x6)", length:15.2, width:10.2},
+      {name:"5R (5x7)", length:17.8, width:12.7},
+      {name:"6R (6x8)", length:20.3, width:15.2},
+      {name:"8R (8x10)", length:25.4, width:20.3},
+      {name:"10R (10x12)", length:30.5, width:25.4},
+      {name:"12R (12x15)", length:38.1, width:30.5},
+      {name:"15R (15x20)", length:50.8, width:38.1},
+      {name:"20R (20x24)", length:61.0, width:50.8}
+    ]
+  };
+
+  var SIZE_PRESETS_KEY = "ppe_size_presets_v1";
+
+  function loadSizePresets(){
+    try{
+      var raw = localStorage.getItem(SIZE_PRESETS_KEY);
+      if (raw){
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    }catch(e){}
+    return [];
+  }
+
+  function saveSizePresets(){ localStorage.setItem(SIZE_PRESETS_KEY, JSON.stringify(customSizePresets)); }
+
+  function loadPapers(){
+    try{
+      var raw = localStorage.getItem(PAPERS_KEY);
+      if (raw){
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length) return parsed;
+      }
+    }catch(e){}
+    return cloneDefaults();
+  }
+
+  function savePapers(){ localStorage.setItem(PAPERS_KEY, JSON.stringify(papers)); }
+
+  function loadCart(){
+    try{
+      var raw = localStorage.getItem(CART_KEY);
+      if (raw){
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    }catch(e){}
+    return [];
+  }
+
+  function saveCart(){ localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+
+  var papers = loadPapers();
+  var cart = loadCart();
+  var customSizePresets = loadSizePresets();
+  var uidCounter = 0;
+  function uid(){ uidCounter += 1; return "c" + Date.now() + "_" + uidCounter; }
+
+  function fmtMoney(n){
+    return "NT$ " + Math.round(n).toLocaleString("en-US");
+  }
+
+  function computeCai(length, width, border){
+    var L = length + 2 * border;
+    var W = width + 2 * border;
+    var raw = (L * W) / 900;
+    if (raw <= 0) return {raw:0, cai:0};
+    var cai;
+    if (raw <= 1) cai = 1;
+    else cai = Math.ceil(raw * 2) / 2;
+    return {raw:raw, cai:cai};
+  }
+
+  var lengthInput = document.getElementById("lengthInput");
+  var widthInput = document.getElementById("widthInput");
+  var borderInput = document.getElementById("borderInput");
+  var qtyInput = document.getElementById("qtyInput");
+  var previewDim = document.getElementById("previewDim");
+  var previewRaw = document.getElementById("previewRaw");
+  var previewCai = document.getElementById("previewCai");
+  var paperTableBody = document.getElementById("paperTableBody");
+  var cartTableBody = document.getElementById("cartTableBody");
+  var cartEmptyMsg = document.getElementById("cartEmptyMsg");
+  var cartTableWrap = document.getElementById("cartTableWrap");
+  var grandTotal = document.getElementById("grandTotal");
+  var favOnlyToggle = document.getElementById("favOnlyToggle");
+  var saveSizeBtn = document.getElementById("saveSizeBtn");
+  var customPresetChips = document.getElementById("customPresetChips");
+
+  function currentDims(){
+    var length = parseFloat(lengthInput.value) || 0;
+    var width = parseFloat(widthInput.value) || 0;
+    var border = parseFloat(borderInput.value) || 0;
+    var qty = parseInt(qtyInput.value, 10) || 1;
+    return {length:length, width:width, border:border, qty:qty};
+  }
+
+  function updatePreview(){
+    var d = currentDims();
+    var result = computeCai(d.length, d.width, d.border);
+    previewDim.textContent = (d.length + 2*d.border).toFixed(1).replace(/\.0$/,"") + " × " + (d.width + 2*d.border).toFixed(1).replace(/\.0$/,"") + " cm";
+    previewRaw.textContent = result.raw.toFixed(2);
+    previewCai.textContent = result.cai.toFixed(1);
+  }
+
+  [lengthInput, widthInput, borderInput, qtyInput].forEach(function(el){
+    el.addEventListener("input", updatePreview);
+  });
+
+  function setSize(length, width){
+    lengthInput.value = length;
+    widthInput.value = width;
+    updatePreview();
+  }
+
+  function makeSizeChip(label, title, onClick){
+    var chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.textContent = label;
+    if (title) chip.title = title;
+    chip.addEventListener("click", onClick);
+    return chip;
+  }
+
+  function renderStandardPresets(){
+    Object.keys(SIZE_PRESETS).forEach(function(containerId){
+      var container = document.getElementById(containerId);
+      container.innerHTML = "";
+      SIZE_PRESETS[containerId].forEach(function(preset){
+        var title = preset.length + " × " + preset.width + " cm";
+        container.appendChild(makeSizeChip(preset.name, title, function(){
+          setSize(preset.length, preset.width);
+        }));
+      });
+    });
+  }
+
+  function renderCustomPresets(){
+    customPresetChips.innerHTML = "";
+    if (!customSizePresets.length){
+      var hint = document.createElement("span");
+      hint.className = "note";
+      hint.style.margin = "0";
+      hint.textContent = "尚未儲存任何尺寸，設定好長寬後可按右側按鈕儲存。";
+      customPresetChips.appendChild(hint);
+      return;
+    }
+    customSizePresets.forEach(function(preset){
+      var chip = document.createElement("span");
+      chip.className = "chip custom";
+      var title = preset.length + " × " + preset.width + " cm";
+      chip.title = title;
+
+      var label = document.createElement("span");
+      label.textContent = preset.name;
+      label.style.cursor = "pointer";
+      label.addEventListener("click", function(){
+        setSize(preset.length, preset.width);
+      });
+      chip.appendChild(label);
+
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "del";
+      del.title = "刪除此尺寸";
+      del.textContent = "✕";
+      del.addEventListener("click", function(){
+        customSizePresets = customSizePresets.filter(function(x){ return x.id !== preset.id; });
+        saveSizePresets();
+        renderCustomPresets();
+      });
+      chip.appendChild(del);
+
+      customPresetChips.appendChild(chip);
+    });
+  }
+
+  saveSizeBtn.addEventListener("click", function(){
+    var d = currentDims();
+    if (d.length <= 0 || d.width <= 0){
+      alert("請先輸入有效的長與寬。");
+      return;
+    }
+    var suggested = d.length + "×" + d.width;
+    var name = window.prompt("請輸入這個尺寸的名稱：", suggested);
+    if (name === null) return;
+    name = name.trim() || suggested;
+    customSizePresets.push({
+      id: "sz_" + Date.now() + "_" + Math.floor(Math.random()*10000),
+      name: name,
+      length: d.length,
+      width: d.width
+    });
+    saveSizePresets();
+    renderCustomPresets();
+  });
+
+  function renderPapers(){
+    paperTableBody.innerHTML = "";
+    var favOnly = !!(favOnlyToggle && favOnlyToggle.checked);
+    var list = favOnly ? papers.filter(function(p){ return !!p.favorite; }) : papers;
+    var lastCat = null;
+    list.forEach(function(p){
+      if (p.cat !== lastCat){
+        var catRow = document.createElement("tr");
+        catRow.className = "category-row";
+        var catTd = document.createElement("td");
+        catTd.colSpan = 9;
+        catTd.textContent = p.cat || "未分類";
+        catRow.appendChild(catTd);
+        paperTableBody.appendChild(catRow);
+        lastCat = p.cat;
+      }
+
+      var tr = document.createElement("tr");
+
+      var tdCheck = document.createElement("td");
+      tdCheck.className = "checkbox-cell";
+      var checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = !!p.checked;
+      checkbox.addEventListener("change", function(){
+        p.checked = checkbox.checked;
+        savePapers();
+      });
+      tdCheck.appendChild(checkbox);
+      tr.appendChild(tdCheck);
+
+      var tdStar = document.createElement("td");
+      tdStar.className = "checkbox-cell";
+      var starBtn = document.createElement("button");
+      starBtn.type = "button";
+      starBtn.className = "star-btn" + (p.favorite ? " active" : "");
+      starBtn.title = p.favorite ? "取消我的最愛" : "加到我的最愛";
+      starBtn.textContent = p.favorite ? "★" : "☆";
+      starBtn.addEventListener("click", function(){
+        p.favorite = !p.favorite;
+        savePapers();
+        renderPapers();
+      });
+      tdStar.appendChild(starBtn);
+      tr.appendChild(tdStar);
+
+      tr.appendChild(makeTextCell(p, "code", "60px"));
+      tr.appendChild(makeTextCell(p, "brand", "90px"));
+      tr.appendChild(makeTextCell(p, "name", "170px", "name"));
+      tr.appendChild(makeNumberCell(p, "gsm", "60px"));
+      tr.appendChild(makeTextCell(p, "spec", "170px"));
+      tr.appendChild(makeNumberCell(p, "price", "80px", "price"));
+
+      var tdAction = document.createElement("td");
+      tdAction.className = "row-actions";
+      var delBtn = document.createElement("button");
+      delBtn.className = "icon-btn";
+      delBtn.title = "刪除此紙張";
+      delBtn.textContent = "✕";
+      delBtn.addEventListener("click", function(){
+        papers = papers.filter(function(x){ return x.id !== p.id; });
+        savePapers();
+        renderPapers();
+      });
+      tdAction.appendChild(delBtn);
+      tr.appendChild(tdAction);
+
+      paperTableBody.appendChild(tr);
+    });
+  }
+
+  function makeTextCell(obj, field, minWidth, extraClass){
+    var td = document.createElement("td");
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "cell-input" + (extraClass ? " " + extraClass : "");
+    if (minWidth) input.style.minWidth = minWidth;
+    input.value = obj[field] || "";
+    input.addEventListener("change", function(){
+      obj[field] = input.value;
+      savePapers();
+    });
+    td.appendChild(input);
+    return td;
+  }
+
+  function makeNumberCell(obj, field, width, extraClass){
+    var td = document.createElement("td");
+    td.className = "num";
+    var input = document.createElement("input");
+    input.type = "number";
+    input.className = "cell-input" + (extraClass ? " " + extraClass : "");
+    if (width) input.style.width = width;
+    input.value = obj[field];
+    input.addEventListener("change", function(){
+      obj[field] = parseFloat(input.value) || 0;
+      savePapers();
+    });
+    td.appendChild(input);
+    return td;
+  }
+
+  function renderCart(){
+    cartTableBody.innerHTML = "";
+    if (!cart.length){
+      cartTableWrap.style.display = "none";
+      cartEmptyMsg.style.display = "block";
+      grandTotal.textContent = fmtMoney(0);
+      return;
+    }
+    cartTableWrap.style.display = "block";
+    cartEmptyMsg.style.display = "none";
+
+    var minSubtotal = Math.min.apply(null, cart.map(function(i){ return i.subtotal; }));
+    var total = 0;
+
+    cart.forEach(function(item){
+      total += item.subtotal;
+      var tr = document.createElement("tr");
+      if (item.subtotal === minSubtotal && cart.length > 1) tr.className = "best";
+
+      var tdName = document.createElement("td");
+      tdName.innerHTML = "<b>" + escapeHtml(item.name) + "</b>" +
+        (item.code ? " <span style='color:var(--muted);font-size:0.78rem;'>(" + escapeHtml(item.code) + ")</span>" : "") +
+        (item.subtotal === minSubtotal && cart.length > 1 ? "<span class='best-badge'>最便宜</span>" : "");
+      tr.appendChild(tdName);
+
+      var tdSize = document.createElement("td");
+      tdSize.textContent = item.length + " × " + item.width + " cm" + (item.border ? " (留白 " + item.border + ")" : "");
+      tr.appendChild(tdSize);
+
+      var tdCai = document.createElement("td");
+      tdCai.className = "num";
+      tdCai.textContent = item.cai.toFixed(1) + " 才";
+      tr.appendChild(tdCai);
+
+      var tdPrice = document.createElement("td");
+      tdPrice.className = "num";
+      tdPrice.textContent = fmtMoney(item.price);
+      tr.appendChild(tdPrice);
+
+      var tdQty = document.createElement("td");
+      tdQty.className = "num";
+      var qtyInputEl = document.createElement("input");
+      qtyInputEl.type = "number";
+      qtyInputEl.className = "cart-qty";
+      qtyInputEl.min = "1";
+      qtyInputEl.value = item.qty;
+      qtyInputEl.addEventListener("change", function(){
+        var v = parseInt(qtyInputEl.value, 10) || 1;
+        item.qty = v;
+        item.subtotal = item.cai * item.price * v;
+        saveCart();
+        renderCart();
+      });
+      tdQty.appendChild(qtyInputEl);
+      tr.appendChild(tdQty);
+
+      var tdSubtotal = document.createElement("td");
+      tdSubtotal.className = "num";
+      tdSubtotal.textContent = fmtMoney(item.subtotal);
+      tr.appendChild(tdSubtotal);
+
+      var tdAction = document.createElement("td");
+      tdAction.className = "row-actions";
+      var delBtn = document.createElement("button");
+      delBtn.className = "icon-btn";
+      delBtn.title = "移除";
+      delBtn.textContent = "✕";
+      delBtn.addEventListener("click", function(){
+        cart = cart.filter(function(x){ return x.id !== item.id; });
+        saveCart();
+        renderCart();
+      });
+      tdAction.appendChild(delBtn);
+      tr.appendChild(tdAction);
+
+      cartTableBody.appendChild(tr);
+    });
+
+    grandTotal.textContent = fmtMoney(total);
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  document.getElementById("addPaperBtn").addEventListener("click", function(){
+    papers.push({
+      id: "p_" + Date.now() + "_" + Math.floor(Math.random()*10000),
+      cat: "自訂紙張",
+      code: "",
+      brand: "",
+      name: "新紙張",
+      gsm: 0,
+      spec: "",
+      price: 0,
+      checked: false,
+      favorite: false
+    });
+    savePapers();
+    renderPapers();
+  });
+
+  favOnlyToggle.addEventListener("change", renderPapers);
+
+  document.getElementById("clearCheckedBtn").addEventListener("click", function(){
+    var anyChecked = papers.some(function(p){ return p.checked; });
+    if (!anyChecked) return;
+    papers.forEach(function(p){ p.checked = false; });
+    savePapers();
+    renderPapers();
+  });
+
+  document.getElementById("resetPapersBtn").addEventListener("click", function(){
+    if (!confirm("確定要還原為預設紙張清單嗎？此動作會覆蓋您目前的編輯。")) return;
+    papers = cloneDefaults();
+    savePapers();
+    renderPapers();
+  });
+
+  document.getElementById("addToCartBtn").addEventListener("click", function(){
+    var d = currentDims();
+    if (d.length <= 0 || d.width <= 0){
+      alert("請輸入有效的長與寬。");
+      return;
+    }
+    var checked = papers.filter(function(p){ return p.checked; });
+    if (!checked.length){
+      alert("請至少勾選一種紙張。");
+      return;
+    }
+    var result = computeCai(d.length, d.width, d.border);
+    checked.forEach(function(p){
+      var subtotal = result.cai * p.price * d.qty;
+      cart.push({
+        id: uid(),
+        name: p.name,
+        code: p.code,
+        length: d.length,
+        width: d.width,
+        border: d.border,
+        cai: result.cai,
+        price: p.price,
+        qty: d.qty,
+        subtotal: subtotal
+      });
+    });
+    saveCart();
+    renderCart();
+    document.getElementById("cartTableWrap").scrollIntoView({behavior:"smooth", block:"nearest"});
+  });
+
+  document.getElementById("clearCartBtn").addEventListener("click", function(){
+    if (!cart.length) return;
+    if (!confirm("確定要清空購物車嗎？")) return;
+    cart = [];
+    saveCart();
+    renderCart();
+  });
+
+  updatePreview();
+  renderStandardPresets();
+  renderCustomPresets();
+  renderPapers();
+  renderCart();
+})();
+</script>
+</body>
+</html>
